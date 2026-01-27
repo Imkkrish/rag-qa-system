@@ -16,6 +16,7 @@ COPY . .
 # Create necessary directories and set permissions
 RUN mkdir -p data/uploads data/vector_store && chmod -R 777 data
 
-EXPOSE 7860
+# Set PYTHONPATH to ensure 'app' module is found
+ENV PYTHONPATH=/app
 
-CMD ["python", "app/main.py"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
