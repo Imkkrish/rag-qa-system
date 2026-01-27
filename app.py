@@ -16,7 +16,6 @@ from app.services.llm_service import llm_service
 fastapi_app = FastAPI(title="RAG API")
 fastapi_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# Zero-GPU Decorated Function
 @spaces.GPU
 def generate_answer_with_gpu(question, chunks):
     return llm_service.generate_answer(question, chunks)
@@ -30,13 +29,11 @@ async def api_upload(background_tasks: BackgroundTasks, file: UploadFile = File(
     os.makedirs(settings.UPLOADS_DIR, exist_ok=True)
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    
     def process_task(path, name):
         text = DocumentProcessor.extract_text(path)
         chunks = DocumentProcessor.chunk_text(text)
         vector_store.add_documents(chunks, name)
         if os.path.exists(path): os.remove(path)
-        
     background_tasks.add_task(process_task, temp_path, file.filename)
     return {"message": "Processing in background", "filename": file.filename}
 
@@ -44,84 +41,128 @@ async def api_upload(background_tasks: BackgroundTasks, file: UploadFile = File(
 async def api_ask(request: Request):
     data = await request.json()
     question = data.get("question")
-    if not question:
-        raise HTTPException(status_code=400, detail="Question is required.")
-    
     relevant_chunks = vector_store.search(question)
-    if not relevant_chunks:
-        return {"answer": "No relevant info found.", "sources": []}
-    
+    if not relevant_chunks: return {"answer": "No relevant info found.", "sources": []}
     answer = generate_answer_with_gpu(question, relevant_chunks)
     sources = list(set([c['source'] for c in relevant_chunks]))
     return {"answer": answer, "sources": sources}
 
 # --- GRADIO UI SETUP ---
 def chatbot_response(message, history):
-    # message: str, history: list of messages
     relevant_chunks = vector_store.search(message)
     if not relevant_chunks:
         yield "I couldn't find any relevant information in the uploaded documents."
         return
-    
     answer = generate_answer_with_gpu(message, relevant_chunks)
     sources = list(set([c['source'] for c in relevant_chunks]))
-    
     response = f"{answer}\n\n**Sources:** {', '.join(sources)}"
     yield response
 
 def upload_file(file):
-    if file is None:
-        return "No file selected."
+    if file is None: return "No file selected."
     try:
         text = DocumentProcessor.extract_text(file.name)
         chunks = DocumentProcessor.chunk_text(text)
         vector_store.add_documents(chunks, os.path.basename(file.name))
-        return f"✅ Successfully processed: {os.path.basename(file.name)}"
-    except Exception as e:
-        return f"❌ Error: {str(e)}"
+        return f"✅ Linked: {os.path.basename(file.name)}"
+    except Exception as e: return f"❌ Error: {str(e)}"
 
-# Premium CSS
+# Premium "Modern Glass" CSS
 custom_css = """
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
+
+:root {
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+}
+
 .gradio-container {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    background: #f8fafc !important;
+    font-family: 'Outfit', sans-serif !important;
 }
-.sidebar-info {
-    font-size: 0.9em;
-    color: #666;
-    margin-top: 10px;
-}
-.header-container {
+
+.main-header {
+    background: var(--primary-gradient);
+    padding: 2.5rem;
+    border-radius: 24px;
+    color: white;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+}
+
+.main-header h1 {
+    font-weight: 600;
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    color: white !important;
+}
+
+.sidebar-box {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.chat-container {
+    border-radius: 24px !important;
+    border: 1px solid #e2e8f0 !important;
+    background: white !important;
+    overflow: hidden;
+}
+
+.upload-btn {
+    background: #f1f5f9 !important;
+    border: 2px dashed #cbd5e1 !important;
+    border-radius: 12px !important;
+    color: #475569 !important;
+    transition: all 0.3s ease !important;
+}
+
+.upload-btn:hover {
+    border-color: #6366f1 !important;
+    background: #eef2ff !important;
+    color: #4f46e5 !important;
+}
+
+footer {
+    display: none !important;
 }
 """
 
-with gr.Blocks(theme=gr.themes.Soft(primary_hue="indigo", secondary_hue="slate"), css=custom_css) as demo:
-    with gr.Row(elem_classes="header-container"):
-        gr.Markdown("# 📚 RAG-Based Knowledge Assistant")
+with gr.Blocks(theme=gr.themes.Soft(primary_hue="indigo", radius_size="lg"), css=custom_css) as demo:
+    with gr.Div(elem_classes="main-header"):
+        gr.Markdown("# 📚 Knowledge Nexus")
+        gr.Markdown("Unlock the hidden insights in your documents with AI-powered retrieval.")
     
     with gr.Row():
         with gr.Column(scale=1):
-            gr.Markdown("### 📥 Document Upload")
-            gr.Markdown("Upload your PDFs or TXT files here to build your knowledge base.", elem_classes="sidebar-info")
-            file_output = gr.Textbox(label="Status", interactive=False)
-            upload_button = gr.UploadButton("📁 Select File", file_types=[".pdf", ".txt"])
-            upload_button.upload(upload_file, upload_button, file_output)
+            with gr.Div(elem_classes="sidebar-box"):
+                gr.Markdown("### 📥 Ingest Documents")
+                gr.Markdown("Support for PDF and TXT files. Your data remains private.")
+                file_status = gr.Textbox(label="Last Action", interactive=False, placeholder="Waiting for upload...")
+                upload_btn = gr.UploadButton(
+                    "➕ Add Document", 
+                    file_types=[".pdf", ".txt"],
+                    elem_classes="upload-btn"
+                )
+                upload_btn.upload(upload_file, upload_btn, file_status)
+                
+                gr.Markdown("---")
+                gr.Markdown("### 🛠️ Configuration")
+                gr.Markdown("Model: **Gemini 1.5 Flash**\nEngine: **FAISS Vector Core**\nScaling: **ZeroGPU Optimized**")
             
-            gr.Markdown("---")
-            gr.Markdown("### 💡 Tips")
-            gr.Markdown("- Ask specific questions about your docs.\n- Upload multiple files for a broader context.\n- Responses are generated using Gemini 1.5 Flash.")
-            
-        with gr.Column(scale=3):
-            # Using ChatInterface with modernized types
-            chat = gr.ChatInterface(
-                fn=chatbot_response,
-                type="messages",
-                examples=["What is the main topic of the document?", "Summarize the uploaded file."],
-            )
+        with gr.Column(scale=2):
+            with gr.Div(elem_classes="chat-container"):
+                gr.ChatInterface(
+                    fn=chatbot_response,
+                    type="messages",
+                    examples=["What's in the document?", "Give me a summary."],
+                    fill_height=True
+                )
 
-# Mount Gradio at root and FastAPI at /api
-# This helps avoid routing conflicts
+# API Prefixing
 app = FastAPI()
 app.mount("/api", fastapi_app)
 app = gr.mount_gradio_app(app, demo, path="/")
