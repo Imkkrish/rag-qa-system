@@ -10,3 +10,5 @@ PyMuPDF
 slowapi
 python-dotenv
 numpy
+spaces
+huggingface_hub

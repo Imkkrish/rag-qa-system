@@ -63,6 +63,15 @@ async def upload_document(request: Request, background_tasks: BackgroundTasks, f
     
     return {"message": "File uploaded successfully. Processing in background.", "filename": file.filename}
 
+try:
+    import spaces
+    @spaces.GPU
+    def generate_with_gpu(query, context_chunks):
+        return llm_service.generate_answer(query, context_chunks)
+except ImportError:
+    def generate_with_gpu(query, context_chunks):
+        return llm_service.generate_answer(query, context_chunks)
+
 @app.post("/ask", response_model=QueryResponse)
 @limiter.limit(settings.RATE_LIMIT)
 async def ask_question(request: Request, query_req: QueryRequest):
@@ -71,7 +80,8 @@ async def ask_question(request: Request, query_req: QueryRequest):
     if not relevant_chunks:
         raise HTTPException(status_code=404, detail="No relevant context found in documents.")
     
-    answer = llm_service.generate_answer(query_req.question, relevant_chunks)
+    # Use the GPU decorated function
+    answer = generate_with_gpu(query_req.question, relevant_chunks)
     sources = list(set([chunk['source'] for chunk in relevant_chunks]))
     
     return QueryResponse(answer=answer, sources=sources)
