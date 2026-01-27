@@ -53,6 +53,9 @@ async def upload_document(request: Request, background_tasks: BackgroundTasks, f
     file_id = str(uuid.uuid4())
     temp_path = os.path.join(settings.UPLOADS_DIR, f"{file_id}_{file.filename}")
     
+    # Ensure directory exists
+    os.makedirs(settings.UPLOADS_DIR, exist_ok=True)
+    
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
@@ -79,4 +82,6 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Use port assigned by HF or default to 7860
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)
