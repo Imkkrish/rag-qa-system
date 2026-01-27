@@ -53,11 +53,11 @@ async def api_ask(request: Request):
 def chatbot_response(message, history):
     relevant_chunks = vector_store.search(message)
     if not relevant_chunks:
-        yield "I couldn't find any relevant information in the uploaded documents."
+        yield "I could not find any relevant information in the uploaded documents."
         return
     answer = generate_answer_with_gpu(message, relevant_chunks)
     sources = list(set([c['source'] for c in relevant_chunks]))
-    response = f"{answer}\n\n**Sources:** {', '.join(sources)}"
+    response = f"{answer}\n\nSources: {', '.join(sources)}"
     yield response
 
 def upload_file(file):
@@ -66,54 +66,48 @@ def upload_file(file):
         text = DocumentProcessor.extract_text(file.name)
         chunks = DocumentProcessor.chunk_text(text)
         vector_store.add_documents(chunks, os.path.basename(file.name))
-        return f"✅ Linked: {os.path.basename(file.name)}"
-    except Exception as e: return f"❌ Error: {str(e)}"
+        return f"File linked: {os.path.basename(file.name)}"
+    except Exception as e: return f"Error: {str(e)}"
 
-# Refined Stable UI Styling
+# Minimal CSS to avoid layout breakages
+# Explicitly hiding SVG icons that might be causing the massive zoom issue
 custom_css = """
 footer {display: none !important;}
-.gradio-container {max-width: 1200px !important; margin: 0 auto !important;}
-.header-box {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-    padding: 2rem;
-    border-radius: 16px;
-    color: white;
-    margin-bottom: 1.5rem;
+.gradio-container {max-width: 1000px !important; margin: 0 auto !important;}
+button svg {display: none !important;}
+.header-area {
     text-align: center;
-}
-.sidebar-section {
-    padding: 1rem;
-    border-radius: 12px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    padding: 20px;
+    background: #4f46e5;
+    color: white;
+    border-radius: 10px;
+    margin-bottom: 20px;
 }
 """
 
-with gr.Blocks(theme=gr.themes.Soft(primary_hue="indigo", radius_size="md"), css=custom_css) as demo:
-    with gr.Column():
-        with gr.Group(elem_classes="header-box"):
-            gr.Markdown("# 📚 Knowledge Nexus")
-            gr.Markdown("Transform your documents into an interactive brain using RAG.")
-        
-        with gr.Row():
-            with gr.Column(scale=1):
-                with gr.Group(elem_classes="sidebar-section"):
-                    gr.Markdown("### 📥 Document Ingestion")
-                    file_status = gr.Textbox(label="Status", interactive=False, placeholder="Waiting for docs...")
-                    upload_btn = gr.UploadButton("➕ Select File", file_types=[".pdf", ".txt"])
-                    upload_btn.upload(upload_file, upload_btn, file_status)
-                    
-                    gr.Markdown("---")
-                    gr.Markdown("### ⚙️ System Details")
-                    gr.Markdown("- **LLM**: Gemini 1.5 Flash\n- **Vector**: FAISS Core\n- **Compute**: ZeroGPU")
-                
-            with gr.Column(scale=3):
-                gr.ChatInterface(
-                    fn=chatbot_response,
-                    type="messages",
-                    examples=["What is in the document?", "Summarize the content."],
-                    fill_height=True
-                )
+with gr.Blocks(theme=gr.themes.Default(primary_hue="indigo"), css=custom_css) as demo:
+    with gr.Column(elem_classes="header-area"):
+        gr.Markdown("# Knowledge Nexus")
+        gr.Markdown("RAG-Powered Document Q&A System")
+    
+    with gr.Row():
+        with gr.Column(scale=1):
+            gr.Markdown("### Upload Section")
+            file_status = gr.Textbox(label="Status", interactive=False, placeholder="No documents uploaded")
+            upload_btn = gr.UploadButton("Upload Document", file_types=[".pdf", ".txt"])
+            upload_btn.upload(upload_file, upload_btn, file_status)
+            
+            gr.Markdown("---")
+            gr.Markdown("### System Info")
+            gr.Markdown("Model: Gemini 1.5 Flash\nRetrieval: FAISS\nCompute: ZeroGPU")
+            
+        with gr.Column(scale=2):
+            gr.ChatInterface(
+                fn=chatbot_response,
+                type="messages",
+                examples=["Summarize the document", "Key points of the file"],
+                fill_height=True
+            )
 
 # API Prefixing
 app = FastAPI()
