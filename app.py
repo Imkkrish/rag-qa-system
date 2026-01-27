@@ -132,13 +132,13 @@ footer {
 """
 
 with gr.Blocks(theme=gr.themes.Soft(primary_hue="indigo", radius_size="lg"), css=custom_css) as demo:
-    with gr.Div(elem_classes="main-header"):
+    with gr.Group(elem_classes="main-header"):
         gr.Markdown("# 📚 Knowledge Nexus")
         gr.Markdown("Unlock the hidden insights in your documents with AI-powered retrieval.")
     
     with gr.Row():
         with gr.Column(scale=1):
-            with gr.Div(elem_classes="sidebar-box"):
+            with gr.Group(elem_classes="sidebar-box"):
                 gr.Markdown("### 📥 Ingest Documents")
                 gr.Markdown("Support for PDF and TXT files. Your data remains private.")
                 file_status = gr.Textbox(label="Last Action", interactive=False, placeholder="Waiting for upload...")
@@ -154,7 +154,7 @@ with gr.Blocks(theme=gr.themes.Soft(primary_hue="indigo", radius_size="lg"), css
                 gr.Markdown("Model: **Gemini 1.5 Flash**\nEngine: **FAISS Vector Core**\nScaling: **ZeroGPU Optimized**")
             
         with gr.Column(scale=2):
-            with gr.Div(elem_classes="chat-container"):
+            with gr.Group(elem_classes="chat-container"):
                 gr.ChatInterface(
                     fn=chatbot_response,
                     type="messages",
