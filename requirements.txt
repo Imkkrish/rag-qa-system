@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+pydantic-settings
+google-generativeai
+sentence-transformers
+faiss-cpu
+PyMuPDF
+slowapi
+python-dotenv
+numpy
