@@ -30,10 +30,12 @@ async def api_upload(background_tasks: BackgroundTasks, file: UploadFile = File(
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     def process_task(path, name):
-        text = DocumentProcessor.extract_text(path)
-        chunks = DocumentProcessor.chunk_text(text)
-        vector_store.add_documents(chunks, name)
-        if os.path.exists(path): os.remove(path)
+        try:
+            text = DocumentProcessor.extract_text(path)
+            chunks = DocumentProcessor.chunk_text(text)
+            vector_store.add_documents(chunks, name)
+        finally:
+            if os.path.exists(path): os.remove(path)
     background_tasks.add_task(process_task, temp_path, file.filename)
     return {"message": "Processing in background", "filename": file.filename}
 
@@ -67,98 +69,49 @@ def upload_file(file):
         return f"✅ Linked: {os.path.basename(file.name)}"
     except Exception as e: return f"❌ Error: {str(e)}"
 
-# Premium "Modern Glass" CSS
+# Refined Stable UI Styling
 custom_css = """
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
-
-:root {
-    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-}
-
-.gradio-container {
-    background: #f8fafc !important;
-    font-family: 'Outfit', sans-serif !important;
-}
-
-.main-header {
-    background: var(--primary-gradient);
-    padding: 2.5rem;
-    border-radius: 24px;
+footer {display: none !important;}
+.gradio-container {max-width: 1200px !important; margin: 0 auto !important;}
+.header-box {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    padding: 2rem;
+    border-radius: 16px;
     color: white;
+    margin-bottom: 1.5rem;
     text-align: center;
-    margin-bottom: 2rem;
-    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
 }
-
-.main-header h1 {
-    font-weight: 600;
-    font-size: 2.2rem;
-    margin-bottom: 0.5rem;
-    color: white !important;
-}
-
-.sidebar-box {
-    background: white;
-    border-radius: 20px;
-    padding: 1.5rem;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-
-.chat-container {
-    border-radius: 24px !important;
-    border: 1px solid #e2e8f0 !important;
-    background: white !important;
-    overflow: hidden;
-}
-
-.upload-btn {
-    background: #f1f5f9 !important;
-    border: 2px dashed #cbd5e1 !important;
-    border-radius: 12px !important;
-    color: #475569 !important;
-    transition: all 0.3s ease !important;
-}
-
-.upload-btn:hover {
-    border-color: #6366f1 !important;
-    background: #eef2ff !important;
-    color: #4f46e5 !important;
-}
-
-footer {
-    display: none !important;
+.sidebar-section {
+    padding: 1rem;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
 }
 """
 
-with gr.Blocks(theme=gr.themes.Soft(primary_hue="indigo", radius_size="lg"), css=custom_css) as demo:
-    with gr.Group(elem_classes="main-header"):
-        gr.Markdown("# 📚 Knowledge Nexus")
-        gr.Markdown("Unlock the hidden insights in your documents with AI-powered retrieval.")
-    
-    with gr.Row():
-        with gr.Column(scale=1):
-            with gr.Group(elem_classes="sidebar-box"):
-                gr.Markdown("### 📥 Ingest Documents")
-                gr.Markdown("Support for PDF and TXT files. Your data remains private.")
-                file_status = gr.Textbox(label="Last Action", interactive=False, placeholder="Waiting for upload...")
-                upload_btn = gr.UploadButton(
-                    "➕ Add Document", 
-                    file_types=[".pdf", ".txt"],
-                    elem_classes="upload-btn"
-                )
-                upload_btn.upload(upload_file, upload_btn, file_status)
+with gr.Blocks(theme=gr.themes.Soft(primary_hue="indigo", radius_size="md"), css=custom_css) as demo:
+    with gr.Column():
+        with gr.Group(elem_classes="header-box"):
+            gr.Markdown("# 📚 Knowledge Nexus")
+            gr.Markdown("Transform your documents into an interactive brain using RAG.")
+        
+        with gr.Row():
+            with gr.Column(scale=1):
+                with gr.Group(elem_classes="sidebar-section"):
+                    gr.Markdown("### 📥 Document Ingestion")
+                    file_status = gr.Textbox(label="Status", interactive=False, placeholder="Waiting for docs...")
+                    upload_btn = gr.UploadButton("➕ Select File", file_types=[".pdf", ".txt"])
+                    upload_btn.upload(upload_file, upload_btn, file_status)
+                    
+                    gr.Markdown("---")
+                    gr.Markdown("### ⚙️ System Details")
+                    gr.Markdown("- **LLM**: Gemini 1.5 Flash\n- **Vector**: FAISS Core\n- **Compute**: ZeroGPU")
                 
-                gr.Markdown("---")
-                gr.Markdown("### 🛠️ Configuration")
-                gr.Markdown("Model: **Gemini 1.5 Flash**\nEngine: **FAISS Vector Core**\nScaling: **ZeroGPU Optimized**")
-            
-        with gr.Column(scale=2):
-            with gr.Group(elem_classes="chat-container"):
+            with gr.Column(scale=3):
                 gr.ChatInterface(
                     fn=chatbot_response,
                     type="messages",
-                    examples=["What's in the document?", "Give me a summary."],
+                    examples=["What is in the document?", "Summarize the content."],
                     fill_height=True
                 )
 
