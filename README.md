@@ -3,23 +3,27 @@ title: RAG QA System
 emoji: 📚
 colorFrom: blue
 colorTo: indigo
-sdk: docker
-app_port: 7860
+sdk: gradio
+sdk_version: 4.12.0
+app_file: app.py
 pinned: false
 ---
 
 # RAG-Based Question Answering System
 
-This is a Retrieval-Augmented Generation (RAG) system built with FastAPI, FAISS, and Google's Gemini LLM. It allows uploading PDF/TXT documents and asking questions based on their content.
+This system uses **FastAPI** for its API and **Gradio** for its user interface, running on **ZeroGPU**.
 
-## Features
+## 🚀 How it works
 
-- **FastAPI**: Modern, fast web framework for APIs.
-- **FAISS**: Efficient similarity search for document chunks.
-- **Gemini 1.5 Flash**: High-performance LLM for generating accurate answers.
-- **Background Jobs**: Asynchronous document processing to prevent API blocking.
-- **ZeroGPU Support**: Configured for Hugging Face Spaces.
+1. **Upload**: Send PDF or TXT files.
+2. **Retrieve**: FAISS finds the most relevant chunks.
+3. **Generate**: Gemini 1.5 Flash synthesizes an answer using **ZeroGPU**.
 
-## Setup & Configuration
+## 🛠️ API Access
 
-Add `GOOGLE_API_KEY` to your Hugging Face Space Secrets.
+The FastAPI endpoints are available at:
+
+- `POST /upload`: Upload documents.
+- `POST /ask`: Query the documents.
+
+Make sure to set `GOOGLE_API_KEY` in your Space Secrets.
