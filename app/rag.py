@@ -7,7 +7,7 @@ from typing import List, Dict
 
 import faiss
 import numpy as np
-import requests
+import google.generativeai as genai
 from sentence_transformers import SentenceTransformer
 from PyPDF2 import PdfReader
 
@@ -18,8 +18,7 @@ from .config import (
     DATA_DIR,
     CHUNK_SIZE,
     CHUNK_OVERLAP,
-    HF_MODEL,
-    HF_API_TOKEN,
+    GOOGLE_API_KEY,
 )
 
 _index_lock = Lock()
@@ -166,9 +165,9 @@ def generate_answer(question: str, contexts: List[Dict]) -> str:
     context_text = "\n\n".join(
         f"[Source: {c['source']}] {c['chunk']}" for c in contexts
     )
-    if not HF_API_TOKEN:
+    if not GOOGLE_API_KEY:
         return (
-            "No HF token configured. Here are the most relevant excerpts:\n\n"
+            "No Gemini API key configured. Here are the most relevant excerpts:\n\n"
             + context_text
         )
 
@@ -178,28 +177,16 @@ def generate_answer(question: str, contexts: List[Dict]) -> str:
         f"Context:\n{context_text}\n\nQuestion: {question}\nAnswer:"
     )
 
-    headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 256,
-            "temperature": 0.2,
-            "return_full_text": False,
-        },
-    }
-    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
-    response = requests.post(url, headers=headers, json=payload, timeout=60)
-    if response.status_code != 200:
+    try:
+        genai.configure(api_key=GOOGLE_API_KEY)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
+        return response.text.strip() or context_text
+    except Exception as e:
         return (
-            "LLM generation failed. Here are the most relevant excerpts:\n\n"
+            f"LLM generation failed: {str(e)}. Here are the most relevant excerpts:\n\n"
             + context_text
         )
-    data = response.json()
-    if isinstance(data, list) and data:
-        return data[0].get("generated_text", "").strip() or context_text
-    if isinstance(data, dict) and "generated_text" in data:
-        return data["generated_text"].strip() or context_text
-    return context_text
 
 
 def ingest_document(path: Path, doc_id: str, source: str) -> Dict:
