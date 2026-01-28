@@ -1,52 +1,49 @@
 # System Architecture
 
-## Overview
-
-The system follows a classic RAG architecture, leveraging FastAPI for the web layer, FAISS for the retrieval layer, and Gemini for the generation layer.
-
-## Component Diagram (Mermaid)
+The Knowledge Nexus RAG System follows a modular architecture designed for high performance and scalability.
 
 ```mermaid
 graph TD
-    User((User))
-    API[FastAPI Interface]
-    BG[Background Worker]
-    DS[Document Storage]
-    VS[(FAISS Vector DB)]
-    ST[Sentence Transformers]
-    LLM[Gemini 1.5 Flash]
+    subgraph Client
+        UI[Streamlit UI]
+        API_Client[External API Client]
+    end
 
-    User -- "1. Uploads PDF/TXT" --> API
-    API -- "2. Saves File" --> DS
-    API -- "3. Triggers Task" --> BG
-    BG -- "4. Extracts Text" --> DS
-    BG -- "5. Chunks Text" --> BG
-    BG -- "6. Embeds Chunks" --> ST
-    ST -- "7. Stores Vectors" --> VS
+    subgraph "Backend (FastAPI)"
+        API[FastAPI Server]
+        Limiter[Rate Limiter]
+        Pydantic[Request Validation]
+        BG[Background Tasks]
+    end
 
-    User -- "8. Asks Question" --> API
-    API -- "9. Embeds Query" --> ST
-    ST -- "10. Similarity Search" --> VS
-    VS -- "11. Retrieves Chunks" --> API
-    API -- "12. Sends Question + Context" --> LLM
-    LLM -- "13. Generates Answer" --> API
-    API -- "14. Returns Answer" --> User
+    subgraph "Core Logic"
+        DP[Document Processor]
+        VS[Vector Store - FAISS]
+        LLM[LLM Service - Gemini]
+    end
+
+    subgraph "Storage"
+        DISK[Local Storage - JSON/FAISS]
+    end
+
+    UI --> API
+    API_Client --> API
+    API --> Limiter
+    Limiter --> Pydantic
+    Pydantic --> BG
+    Pydantic --> VS
+    BG --> DP
+    DP --> VS
+    VS --> DISK
+    VS --> LLM
+    LLM --> API
+    API --> Client
 ```
 
-## Workflow Detail
+## Component Breakdown
 
-1.  **Ingestion Phase**:
-    - The user uploads a file.
-    - The system saves it temporarily and returns a "success" response immediately.
-    - A background task handles the extraction of text from PDF/TXT using `PyMuPDF`.
-    - Text is broken into manageable chunks (1000 chars).
-    - Each chunk is converted into an embedding (384-dim vector).
-    - Vectors and metadata are stored in a local FAISS index.
-
-2.  **Query Phase**:
-    - The user sends a natural language question.
-    - The question is converted into the same embedding space.
-    - FAISS performs an L2 distance search to find the top 4 most similar chunks.
-    - These chunks are formatted into a prompt for the Gemini LLM.
-    - The LLM synthesizes an answer based _only_ on the provided context.
-    - The answer and sources are returned to the user.
+1.  **FastAPI Server**: Acts as the central hub, exposing endpoints for document upload and querying. It runs on a background thread within the Streamlit process.
+2.  **Rate Limiter**: Uses `slowapi` to prevent abuse of the API.
+3.  **Document Processor**: Handles text extraction from PDF/TXT files and performs semantic chunking.
+4.  **Vector Store (FAISS)**: Uses `SentenceTransformer` to generate embeddings and FAISS for efficient similarity search.
+5.  **LLM Service**: Connects to Google's Gemini 1.5 Flash to synthesize answers based on retrieved context.
