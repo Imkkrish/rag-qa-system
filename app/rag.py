@@ -84,11 +84,26 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
 
 
 def _read_pdf(path: Path) -> str:
+    """Read PDF - use OCR if text extraction yields little content."""
     reader = PdfReader(str(path))
     pages = []
     for page in reader.pages:
         pages.append(page.extract_text() or "")
-    return "\n".join(pages)
+    text = "\n".join(pages).strip()
+    
+    # If very little text extracted, try OCR
+    if len(text) < 100:
+        try:
+            from pdf2image import convert_from_path
+            import pytesseract
+            images = convert_from_path(str(path))
+            ocr_pages = []
+            for img in images:
+                ocr_pages.append(pytesseract.image_to_string(img))
+            text = "\n".join(ocr_pages)
+        except Exception:
+            pass  # Fall back to original text
+    return text
 
 
 def _read_txt(path: Path) -> str:
