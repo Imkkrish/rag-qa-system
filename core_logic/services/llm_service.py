@@ -1,17 +1,21 @@
-import google.generativeai as genai
+from google import genai
 from core_logic.core.config import settings
 from typing import List
 
 class LLMService:
     def __init__(self):
-        if settings.GOOGLE_API_KEY:
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
-        else:
-            self.model = None
+        self._client = None
+
+    @property
+    def client(self):
+        if self._client is None:
+            if settings.GOOGLE_API_KEY:
+                print("Initializing Gemini LLM (google-genai)...")
+                self._client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+        return self._client
 
     def generate_answer(self, query: str, context_chunks: List[str]) -> str:
-        if not self.model:
+        if not self.client:
             return "LLM service not configured. Please provide GOOGLE_API_KEY."
             
         context_text = "\n\n".join([chunk['text'] for chunk in context_chunks])
@@ -30,7 +34,10 @@ class LLMService:
         Answer:
         """
         
-        response = self.model.generate_content(prompt)
+        response = self.client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
         return response.text
 
 llm_service = LLMService()
