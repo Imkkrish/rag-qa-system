@@ -7,7 +7,7 @@ from typing import List, Dict
 
 import faiss
 import numpy as np
-import google.generativeai as genai
+from google import genai
 from sentence_transformers import SentenceTransformer
 from PyPDF2 import PdfReader
 
@@ -193,9 +193,11 @@ def generate_answer(question: str, contexts: List[Dict]) -> str:
     )
 
     try:
-        genai.configure(api_key=GOOGLE_API_KEY)
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(prompt)
+        client = genai.Client(api_key=GOOGLE_API_KEY)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+        )
         return response.text.strip() or context_text
     except Exception as e:
         return (
