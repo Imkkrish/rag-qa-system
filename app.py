@@ -1,6 +1,8 @@
 try:
     import streamlit as st
-    HAS_STREAMLIT = True
+    # Check if we are actually running with 'streamlit run'
+    from streamlit.runtime.scriptrunner import get_script_run_context
+    HAS_STREAMLIT = get_script_run_context() is not None
 except ImportError:
     HAS_STREAMLIT = False
 
@@ -80,7 +82,7 @@ def run_api_server():
     # Run on a different port than Streamlit (7860)
     uvicorn.run(api_app, host="0.0.0.0", port=8000)
 
-# Start API thread
+# Start API thread automatically if in Streamlit
 if HAS_STREAMLIT:
     if "api_started" not in st.session_state:
         st.session_state.api_started = True
@@ -169,3 +171,10 @@ if HAS_STREAMLIT:
                     response = f"{ans}\n\nSources: {', '.join(sources)}"
                 st.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
+
+if __name__ == "__main__":
+    if not HAS_STREAMLIT:
+        print("Starting FastAPI Server (Independent Mode)...")
+        run_api_server()
+    else:
+        print("FastAPI Server will start in a background thread via Streamlit.")

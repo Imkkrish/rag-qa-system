@@ -9,23 +9,46 @@ app_file: app.py
 pinned: false
 ---
 
-# RAG-Based Question Answering System
+# Knowledge Nexus - RAG QA System
 
-This system uses **Streamlit** for its user interface and **FastAPI** for its background API, running on **ZeroGPU**.
+Knowledge Nexus is a Retrieval-Augmented Generation (RAG) system built with FastAPI and Streamlit. It allows users to upload PDF and TXT documents, indexes them using FAISS and SentenceTransformers, and provides an interface to query the documents using Google's Gemini 1.5 Flash.
 
-## 🚀 How it works
+## ✨ Features
 
-1. **Upload**: Use the sidebar to upload PDF or TXT files.
-2. **Retrieve**: FAISS finds the most relevant chunks from your documents.
-3. **Generate**: Gemini 1.5 Flash synthesizes an answer using **ZeroGPU**.
+- **Multi-Format Support**: Upload PDF and TXT files.
+- **Efficient Retrieval**: Uses FAISS for incredibly fast similarity search.
+- **LLM Powered**: Synthesizes answers using Gemini 1.5 Flash.
+- **Robust API**:
+  - Request validation using **Pydantic**.
+  - Rate limiting via **SlowAPI**.
+  - Background task processing for document ingestion.
+- **Premium UI**: Sleek, text-focused Streamlit interface.
 
-## 🛠️ API Access
+## 🚀 Setup & Usage
 
-The FastAPI endpoints are available at:
+### 1. Requirements
+Ensure you have Python 3.9+ installed and a `GOOGLE_API_KEY`.
 
-- `POST /upload`: Upload documents.
-- `POST /ask`: Query the documents.
+### 2. Installation
+```bash
+pip install -r requirements.txt
+```
 
-_Note: The API runs on a background thread within the Streamlit process._
+### 3. Running the App
+```bash
+streamlit run app.py
+```
+This will start:
+- **Streamlit UI**: Typically on `http://localhost:8501`
+- **FastAPI Backend**: On `http://localhost:8000`
 
-Make sure to set `GOOGLE_API_KEY` in your Space Secrets.
+### 4. API Documentation
+- **POST `/upload`**: Upload a document (PDF/TXT).
+- **POST `/ask`**: Query the index. 
+  Example Payload: `{"question": "How do I setup?", "k": 3}`
+
+## 📖 Mandatory Explanations
+For details on chunking strategies, retrieval failures, and metrics, see [explanations.md](explanations.md).
+
+## 📐 Architecture
+Visulize the system flow in [architecture.md](architecture.md).
