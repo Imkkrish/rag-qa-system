@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -35,7 +35,7 @@ def rate_limit_handler(request, exc):
 
 @app.post("/documents/upload", response_model=UploadResponse)
 @limiter.limit("10/minute")
-async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def upload_document(request: Request, background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     suffix = Path(file.filename).suffix.lower()
     if suffix not in {".pdf", ".txt"}:
         raise HTTPException(status_code=400, detail="Only PDF and TXT are supported")
@@ -63,7 +63,7 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
 
 @app.get("/documents/status/{job_id}", response_model=JobStatus)
 @limiter.limit("30/minute")
-async def document_status(job_id: str):
+async def document_status(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -72,7 +72,7 @@ async def document_status(job_id: str):
 
 @app.post("/qa", response_model=QAResponse)
 @limiter.limit("30/minute")
-async def ask_question(payload: QARequest):
+async def ask_question(request: Request, payload: QARequest):
     started = time.time()
     contexts = search(payload.question, payload.top_k or TOP_K_DEFAULT)
     answer = generate_answer(payload.question, contexts)
