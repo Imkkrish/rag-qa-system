@@ -3,7 +3,7 @@ import numpy as np
 import json
 import os
 from sentence_transformers import SentenceTransformer
-from app.core.config import settings
+from core_logic.core.config import settings
 from typing import List, Dict
 
 class VectorStore:

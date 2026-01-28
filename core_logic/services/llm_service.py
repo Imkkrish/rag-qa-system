@@ -1,5 +1,5 @@
 import google.generativeai as genai
-from app.core.config import settings
+from core_logic.core.config import settings
 from typing import List
 
 class LLMService:

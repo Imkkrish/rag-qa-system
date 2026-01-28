@@ -11,10 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 import time
 
 # Import services
-from app.core.config import settings
-from app.services.document_processor import DocumentProcessor
-from app.services.vector_store import vector_store
-from app.services.llm_service import llm_service
+from core_logic.core.config import settings
+from core_logic.services.document_processor import DocumentProcessor
+from core_logic.services.vector_store import vector_store
+from core_logic.services.llm_service import llm_service
 
 # --- FASTAPI APP DEFINITION (Exposed at top level) ---
 api_app = FastAPI(title="RAG API")

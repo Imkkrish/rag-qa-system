@@ -1,7 +1,7 @@
 import fitz  # PyMuPDF
 import os
 from typing import List
-from app.core.config import settings
+from core_logic.core.config import settings
 
 class DocumentProcessor:
     @staticmethod
