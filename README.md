@@ -1,3 +1,15 @@
+---
+title: RAG QA System
+emoji: "🧠"
+colorFrom: indigo
+colorTo: blue
+sdk: streamlit
+sdk_version: "1.37.1"
+python_version: "3.9"
+app_file: streamlit_app.py
+pinned: false
+---
+
 # RAG-Based Question Answering System
 
 ## Overview

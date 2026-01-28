@@ -2,6 +2,7 @@ import json
 import uuid
 from datetime import datetime
 from threading import Lock
+from typing import Optional, Dict
 from .config import JOBS_PATH, DATA_DIR
 
 _lock = Lock()
@@ -31,7 +32,7 @@ def create_job(filename: str) -> str:
     return job_id
 
 
-def update_job(job_id: str, status: str, error: str | None = None):
+def update_job(job_id: str, status: str, error: Optional[str] = None):
     _ensure()
     with _lock:
         jobs = json.loads(JOBS_PATH.read_text())
@@ -42,7 +43,7 @@ def update_job(job_id: str, status: str, error: str | None = None):
             JOBS_PATH.write_text(json.dumps(jobs, indent=2))
 
 
-def get_job(job_id: str) -> dict | None:
+def get_job(job_id: str) -> Optional[Dict]:
     _ensure()
     with _lock:
         jobs = json.loads(JOBS_PATH.read_text())

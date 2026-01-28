@@ -1,10 +1,11 @@
 import time
+import os
 import requests
 import streamlit as st
 
-API_BASE = st.secrets.get("API_BASE", "http://localhost:8000")
-
 st.set_page_config(page_title="RAG QA", page_icon="🧠", layout="wide")
+
+API_BASE = os.getenv("API_BASE", "http://localhost:8000")
 
 st.title("RAG-Based Question Answering")
 
