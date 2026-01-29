@@ -192,18 +192,25 @@ def generate_answer(question: str, contexts: List[Dict]) -> str:
         f"Context:\n{context_text}\n\nQuestion: {question}\nAnswer:"
     )
 
-    try:
-        client = genai.Client(api_key=GOOGLE_API_KEY)
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-        )
-        return response.text.strip() or context_text
-    except Exception as e:
-        return (
-            f"LLM generation failed: {str(e)}. Here are the most relevant excerpts:\n\n"
-            + context_text
-        )
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            client = genai.Client(api_key=GOOGLE_API_KEY)
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt,
+            )
+            return response.text.strip() or context_text
+        except Exception as e:
+            error_str = str(e)
+            if "429" in error_str and attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff
+                time.sleep(wait_time)
+                continue
+            return (
+                f"LLM generation failed: {error_str}. Here are the most relevant excerpts:\n\n"
+                + context_text
+            )
 
 
 def ingest_document(path: Path, doc_id: str, source: str) -> Dict:

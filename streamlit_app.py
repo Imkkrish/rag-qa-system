@@ -12,7 +12,7 @@ from app.rag import ingest_document, search, generate_answer
 
 st.set_page_config(page_title="RAG QA", page_icon="🧠", layout="wide")
 
-API_BASE = os.getenv("API_BASE", "http://localhost:8000")
+API_BASE = os.getenv("API_BASE", "http://localhost:8001")
 
 st.title("RAG-Based Question Answering")
 
