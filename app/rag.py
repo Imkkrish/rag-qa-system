@@ -39,24 +39,33 @@ def _load_model():
 
 
 def _load_metadata() -> List[Dict]:
-    global _metadata
-    return _metadata
+    _ensure_dirs()
+    if not METADATA_PATH.exists():
+        return []
+    try:
+        return json.loads(METADATA_PATH.read_text())
+    except:
+        return []
 
 
 def _save_metadata(metadata: List[Dict]):
-    global _metadata
-    _metadata = metadata
+    _ensure_dirs()
+    METADATA_PATH.write_text(json.dumps(metadata, indent=2))
 
 
 def _load_index(dimension: int):
-    global _index
-    if _index is None:
-        _index = faiss.IndexFlatIP(dimension)
-    return _index
+    _ensure_dirs()
+    if INDEX_PATH.exists():
+        try:
+            return faiss.read_index(str(INDEX_PATH))
+        except:
+            pass
+    return faiss.IndexFlatIP(dimension)
 
 
 def _save_index(index):
-    pass  # In-memory storage for HF Spaces compatibility
+    _ensure_dirs()
+    faiss.write_index(index, str(INDEX_PATH))
 
 
 def _normalize(embeddings: np.ndarray) -> np.ndarray:
