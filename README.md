@@ -29,13 +29,16 @@ This project provides a minimal RAG pipeline using FastAPI + FAISS for retrieval
 See [docs/architecture.drawio](docs/architecture.drawio).
 
 ## Setup
-1. Create a virtual environment and install deps:
+1. Create a Hugging Face dataset repository for storing vector data (e.g., `Imkkrish/rag-data`).
+2. Install dependencies:
    - `pip install -r requirements.txt`
-2. Configure environment variables (copy `.env.example` to `.env`):
+3. Configure environment variables (copy `.env.example` to `.env`):
    - `GOOGLE_API_KEY` (required for LLM generation)
-3. Run the API:
+   - `HF_REPO` (your HF dataset repo, e.g., `Imkkrish/rag-data`)
+   - `HF_TOKEN` (your HF token with write access)
+4. Run the API:
    - `uvicorn app.main:app --reload`
-4. Run Streamlit:
+5. Run Streamlit:
    - `streamlit run streamlit_app.py`
 
 ## API Endpoints
@@ -55,3 +58,4 @@ See [docs/EXPLANATIONS.md](docs/EXPLANATIONS.md).
 ## Notes
 - If `GOOGLE_API_KEY` is not set, the system returns retrieved chunks instead of an LLM answer.
 - This implementation avoids heavy frameworks and uses a lightweight local FAISS index.
+- For HF Spaces deployment, set `HF_REPO` and `HF_TOKEN` in secrets to persist data across sessions.
