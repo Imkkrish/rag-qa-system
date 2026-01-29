@@ -55,8 +55,12 @@ def _save_metadata(metadata: List[Dict]):
     _ensure_dirs()
     METADATA_PATH.write_text(json.dumps(metadata, indent=2))
     if HF_REPO and HF_TOKEN:
-        api = HfApi()
-        api.upload_file(path_or_fileobj=str(METADATA_PATH), path_in_repo="metadata.json", repo_id=HF_REPO, token=HF_TOKEN)
+        try:
+            api = HfApi()
+            api.upload_file(path_or_fileobj=str(METADATA_PATH), path_in_repo="metadata.json", repo_id=HF_REPO, token=HF_TOKEN)
+            print("Uploaded metadata to HF Hub")
+        except Exception as e:
+            print(f"Failed to upload metadata: {e}")
 
 
 def _load_index(dimension: int):
@@ -75,8 +79,12 @@ def _save_index(index):
     _ensure_dirs()
     faiss.write_index(index, str(INDEX_PATH))
     if HF_REPO and HF_TOKEN:
-        api = HfApi()
-        api.upload_file(path_or_fileobj=str(INDEX_PATH), path_in_repo="index.faiss", repo_id=HF_REPO, token=HF_TOKEN)
+        try:
+            api = HfApi()
+            api.upload_file(path_or_fileobj=str(INDEX_PATH), path_in_repo="index.faiss", repo_id=HF_REPO, token=HF_TOKEN)
+            print("Uploaded index to HF Hub")
+        except Exception as e:
+            print(f"Failed to upload index: {e}")
 
 
 def _normalize(embeddings: np.ndarray) -> np.ndarray:
