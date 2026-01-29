@@ -2,6 +2,7 @@ import time
 import os
 from pathlib import Path
 from uuid import uuid4
+import tempfile
 
 import requests
 import streamlit as st
@@ -31,13 +32,15 @@ with st.sidebar:
                 else:
                     st.error(res.text)
             except RequestException:
-                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-                suffix = Path(uploaded.name).suffix.lower()
-                doc_id = str(uuid4())
-                dest_path = UPLOAD_DIR / f"{doc_id}{suffix}"
-                dest_path.write_bytes(uploaded.getvalue())
-                ingest_document(dest_path, doc_id=doc_id, source=uploaded.name)
-                st.success("Document ingested locally (no API server).")
+                try:
+                    suffix = Path(uploaded.name).suffix.lower()
+                    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                        tmp.write(uploaded.getvalue())
+                        dest_path = Path(tmp.name)
+                    ingest_document(dest_path, doc_id=str(uuid4()), source=uploaded.name)
+                    st.success("Document ingested locally (no API server).")
+                except Exception as e:
+                    st.error(f"Local ingestion failed: {str(e)}")
 
     if "last_job_id" in st.session_state:
         if st.button("Check Last Job"):
