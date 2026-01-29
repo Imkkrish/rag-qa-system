@@ -23,6 +23,8 @@ from .config import (
 
 _index_lock = Lock()
 _model = None
+_index = None
+_metadata = []
 
 
 def _ensure_dirs():
@@ -37,27 +39,24 @@ def _load_model():
 
 
 def _load_metadata() -> List[Dict]:
-    _ensure_dirs()
-    if not METADATA_PATH.exists():
-        return []
-    return json.loads(METADATA_PATH.read_text())
+    global _metadata
+    return _metadata
 
 
 def _save_metadata(metadata: List[Dict]):
-    _ensure_dirs()
-    METADATA_PATH.write_text(json.dumps(metadata, indent=2))
+    global _metadata
+    _metadata = metadata
 
 
 def _load_index(dimension: int):
-    _ensure_dirs()
-    if INDEX_PATH.exists():
-        return faiss.read_index(str(INDEX_PATH))
-    return faiss.IndexFlatIP(dimension)
+    global _index
+    if _index is None:
+        _index = faiss.IndexFlatIP(dimension)
+    return _index
 
 
 def _save_index(index):
-    _ensure_dirs()
-    faiss.write_index(index, str(INDEX_PATH))
+    pass  # In-memory storage for HF Spaces compatibility
 
 
 def _normalize(embeddings: np.ndarray) -> np.ndarray:
