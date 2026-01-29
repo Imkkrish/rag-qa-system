@@ -43,9 +43,11 @@ def _load_metadata() -> List[Dict]:
     _ensure_dirs()
     if not METADATA_PATH.exists() and HF_REPO:
         try:
+            print(f"Downloading metadata from {HF_REPO}")
             hf_hub_download(repo_id=HF_REPO, filename="metadata.json", local_dir=DATA_DIR, token=HF_TOKEN)
-        except Exception:
-            pass  # If download fails, start empty
+            print("Downloaded metadata successfully")
+        except Exception as e:
+            print(f"Failed to download metadata: {e}")
     if not METADATA_PATH.exists():
         return []
     return json.loads(METADATA_PATH.read_text())
@@ -67,9 +69,11 @@ def _load_index(dimension: int):
     _ensure_dirs()
     if not INDEX_PATH.exists() and HF_REPO:
         try:
+            print(f"Downloading index from {HF_REPO}")
             hf_hub_download(repo_id=HF_REPO, filename="index.faiss", local_dir=DATA_DIR, token=HF_TOKEN)
-        except Exception:
-            pass
+            print("Downloaded index successfully")
+        except Exception as e:
+            print(f"Failed to download index: {e}")
     if INDEX_PATH.exists():
         return faiss.read_index(str(INDEX_PATH))
     return faiss.IndexFlatIP(dimension)
