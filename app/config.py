@@ -16,5 +16,5 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "120"))
 TOP_K_DEFAULT = int(os.getenv("TOP_K_DEFAULT", "4"))
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
-HF_REPO = os.getenv("HF_REPO", "Imkkrish/rag-data")  # Your HF repo for data storage
+HF_REPO = os.getenv("HF_REPO", "imkrish/rag-data")  # Your HF repo for data storage
 HF_TOKEN = os.getenv("HF_TOKEN", "")
