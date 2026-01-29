@@ -9,7 +9,6 @@ import faiss
 import numpy as np
 from google import genai
 from sentence_transformers import SentenceTransformer
-from huggingface_hub import HfApi
 from PyPDF2 import PdfReader
 
 from .config import (
@@ -20,34 +19,14 @@ from .config import (
     CHUNK_SIZE,
     CHUNK_OVERLAP,
     GOOGLE_API_KEY,
-    HF_DATASET_REPO,
 )
 
 _index_lock = Lock()
 _model = None
-_index = None
-_metadata = []
 
 
 def _ensure_dirs():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _download_file_if_needed(file_path: Path, hf_path: str):
-    if not file_path.exists():
-        try:
-            api = HfApi()
-            api.hf_download(repo_id=HF_DATASET_REPO, filename=hf_path, local_dir=file_path.parent, local_dir_use_symlinks=False)
-        except Exception:
-            pass
-
-
-def _upload_file(file_path: Path, hf_path: str):
-    try:
-        api = HfApi()
-        api.upload_file(path_or_fileobj=str(file_path), path_in_repo=hf_path, repo_id=HF_DATASET_REPO, repo_type="dataset")
-    except Exception:
-        pass
 
 
 def _load_model():
@@ -58,37 +37,27 @@ def _load_model():
 
 
 def _load_metadata() -> List[Dict]:
-    _download_file_if_needed(METADATA_PATH, "metadata.json")
     _ensure_dirs()
     if not METADATA_PATH.exists():
         return []
-    try:
-        return json.loads(METADATA_PATH.read_text())
-    except:
-        return []
+    return json.loads(METADATA_PATH.read_text())
 
 
 def _save_metadata(metadata: List[Dict]):
     _ensure_dirs()
     METADATA_PATH.write_text(json.dumps(metadata, indent=2))
-    _upload_file(METADATA_PATH, "metadata.json")
 
 
 def _load_index(dimension: int):
-    _download_file_if_needed(INDEX_PATH, "index.faiss")
     _ensure_dirs()
     if INDEX_PATH.exists():
-        try:
-            return faiss.read_index(str(INDEX_PATH))
-        except:
-            pass
+        return faiss.read_index(str(INDEX_PATH))
     return faiss.IndexFlatIP(dimension)
 
 
 def _save_index(index):
     _ensure_dirs()
     faiss.write_index(index, str(INDEX_PATH))
-    _upload_file(INDEX_PATH, "index.faiss")
 
 
 def _normalize(embeddings: np.ndarray) -> np.ndarray:
