@@ -10,6 +10,7 @@ import numpy as np
 from google import genai
 from sentence_transformers import SentenceTransformer
 from PyPDF2 import PdfReader
+from huggingface_hub import HfApi, hf_hub_download
 
 from .config import (
     INDEX_PATH,
@@ -19,6 +20,8 @@ from .config import (
     CHUNK_SIZE,
     CHUNK_OVERLAP,
     GOOGLE_API_KEY,
+    HF_REPO,
+    HF_TOKEN,
 )
 
 _index_lock = Lock()
@@ -38,6 +41,11 @@ def _load_model():
 
 def _load_metadata() -> List[Dict]:
     _ensure_dirs()
+    if not METADATA_PATH.exists() and HF_REPO:
+        try:
+            hf_hub_download(repo_id=HF_REPO, filename="metadata.json", local_dir=DATA_DIR, token=HF_TOKEN)
+        except Exception:
+            pass  # If download fails, start empty
     if not METADATA_PATH.exists():
         return []
     return json.loads(METADATA_PATH.read_text())
@@ -46,10 +54,18 @@ def _load_metadata() -> List[Dict]:
 def _save_metadata(metadata: List[Dict]):
     _ensure_dirs()
     METADATA_PATH.write_text(json.dumps(metadata, indent=2))
+    if HF_REPO and HF_TOKEN:
+        api = HfApi()
+        api.upload_file(path_or_fileobj=str(METADATA_PATH), path_in_repo="metadata.json", repo_id=HF_REPO, token=HF_TOKEN)
 
 
 def _load_index(dimension: int):
     _ensure_dirs()
+    if not INDEX_PATH.exists() and HF_REPO:
+        try:
+            hf_hub_download(repo_id=HF_REPO, filename="index.faiss", local_dir=DATA_DIR, token=HF_TOKEN)
+        except Exception:
+            pass
     if INDEX_PATH.exists():
         return faiss.read_index(str(INDEX_PATH))
     return faiss.IndexFlatIP(dimension)
@@ -58,6 +74,9 @@ def _load_index(dimension: int):
 def _save_index(index):
     _ensure_dirs()
     faiss.write_index(index, str(INDEX_PATH))
+    if HF_REPO and HF_TOKEN:
+        api = HfApi()
+        api.upload_file(path_or_fileobj=str(INDEX_PATH), path_in_repo="index.faiss", repo_id=HF_REPO, token=HF_TOKEN)
 
 
 def _normalize(embeddings: np.ndarray) -> np.ndarray:
