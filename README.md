@@ -13,44 +13,49 @@ pinned: false
 # RAG-Based Question Answering System
 
 ## Overview
-This project provides a minimal RAG pipeline using FastAPI + FAISS for retrieval and a Streamlit UI for interaction. Documents are ingested in the background, chunked, embedded, and stored locally. Queries retrieve relevant chunks and generate answers using Google Gemini API.
+This project provides a minimal RAG pipeline using FastAPI with a built-in web interface. Documents are ingested, chunked, embedded, and stored locally or on HF Hub. Queries retrieve relevant chunks and generate answers using Google Gemini API.
 
 ## Features
 - PDF + TXT ingestion (with OCR support for scanned PDFs)
 - Chunking + embeddings (SentenceTransformers)
-- FAISS vector store
+- FAISS vector store with HF Hub persistence
 - Background ingestion job
-- FastAPI endpoints with Pydantic validation
+- FastAPI with web UI (HTML templates)
+- API endpoints with Pydantic validation
 - Basic rate limiting
-- Streamlit UI
 - Metrics logging (latency)
 
 ## Architecture Diagram
 See [docs/architecture.drawio](docs/architecture.drawio).
 
 ## Setup
-1. Create a Hugging Face dataset repository for storing vector data (e.g., `Imkkrish/rag-data`).
-2. Install dependencies:
+1. Install dependencies:
    - `pip install -r requirements.txt`
-3. Configure environment variables (copy `.env.example` to `.env`):
+2. Configure environment variables (copy `.env.example` to `.env`):
    - `GOOGLE_API_KEY` (required for LLM generation)
-   - `HF_REPO` (your HF dataset repo, e.g., `Imkkrish/rag-data`)
+   - `HF_REPO` (your HF dataset repo, e.g., `imkrish/rag-data`)
    - `HF_TOKEN` (your HF token with write access)
-4. Run the API:
+3. Run the app:
    - `uvicorn app.main:app --reload`
-5. Run Streamlit:
-   - `streamlit run streamlit_app.py`
+4. Open http://localhost:8000 in your browser
+
+## Docker
+- Build: `docker build -t rag-qa .`
+- Run: `docker run -p 8000:8000 rag-qa`
 
 ## API Endpoints
+- `GET /` - Web interface
+- `POST /upload` - Upload and ingest document (web form)
+- `POST /ask` - Ask question (web form)
 - `POST /documents/upload` (multipart file) → returns `job_id`
 - `GET /documents/status/{job_id}` → job status
 - `POST /qa` → answer + contexts
 - `GET /health`
 
 ## Usage
-1. Upload a document using the Streamlit UI or `POST /documents/upload`.
-2. Wait for job completion using `/documents/status/{job_id}`.
-3. Ask questions via the UI or `POST /qa`.
+1. Open http://localhost:8000
+2. Upload a document using the web form
+3. Ask questions via the web interface
 
 ## Mandatory Explanations
 See [docs/EXPLANATIONS.md](docs/EXPLANATIONS.md).

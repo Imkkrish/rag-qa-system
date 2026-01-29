@@ -2,8 +2,11 @@ import time
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -12,7 +15,7 @@ from starlette.responses import JSONResponse
 from .config import UPLOAD_DIR, TOP_K_DEFAULT
 from .models import UploadResponse, JobStatus, QARequest, QAResponse
 from .storage import create_job, update_job, get_job
-from .rag import ingest_document, search, generate_answer
+from .rag import ingest_document, search, generate_answer, get_ingested_documents
 
 app = FastAPI(title="RAG-Based Question Answering System")
 
@@ -27,10 +30,56 @@ app.add_middleware(
 limiter = Limiter(key_func=get_remote_address, default_limits=["20/minute"])
 app.state.limiter = limiter
 
+templates = Jinja2Templates(directory="templates")
+
 
 @app.exception_handler(RateLimitExceeded)
 def rate_limit_handler(request, exc):
     return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
+
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    documents = get_ingested_documents()
+    return templates.TemplateResponse("index.html", {"request": request, "documents": documents})
+
+
+@app.post("/upload")
+async def upload_web(request: Request, file: UploadFile = File(...)):
+    suffix = Path(file.filename).suffix.lower()
+    if suffix not in {".pdf", ".txt"}:
+        documents = get_ingested_documents()
+        return templates.TemplateResponse("index.html", {"request": request, "upload_message": "Only PDF and TXT are supported", "documents": documents})
+    
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    doc_id = str(uuid4())
+    dest_path = UPLOAD_DIR / f"{doc_id}{suffix}"
+    content = await file.read()
+    dest_path.write_bytes(content)
+    
+    ingest_document(dest_path, doc_id=doc_id, source=file.filename)
+    documents = get_ingested_documents()
+    return templates.TemplateResponse("index.html", {"request": request, "upload_message": "Document ingested successfully", "documents": documents})
+
+
+@app.post("/ask")
+async def ask_web(request: Request, question: str = Form(...), top_k: int = Form(4)):
+    documents = get_ingested_documents()
+    if not question:
+        return templates.TemplateResponse("index.html", {"request": request, "answer": "Please enter a question", "documents": documents})
+    
+    start = time.time()
+    contexts = search(question, top_k)
+    answer = generate_answer(question, contexts)
+    latency_ms = int((time.time() - start) * 1000)
+    
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "answer": answer,
+        "contexts": contexts,
+        "latency_ms": latency_ms,
+        "documents": documents
+    })
 
 
 @app.post("/documents/upload", response_model=UploadResponse)

@@ -244,6 +244,14 @@ def generate_answer(question: str, contexts: List[Dict]) -> str:
             )
 
 
+def get_ingested_documents() -> List[str]:
+    metadata = _load_metadata()
+    sources = set()
+    for item in metadata:
+        sources.add(item["source"])
+    return sorted(list(sources))
+
+
 def ingest_document(path: Path, doc_id: str, source: str) -> Dict:
     started = time.time()
     text = parse_document(path)
