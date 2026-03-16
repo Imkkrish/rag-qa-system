@@ -76,6 +76,12 @@ def _load_index(dimension: int):
             print(f"Failed to download index: {e}")
     if INDEX_PATH.exists():
         return faiss.read_index(str(INDEX_PATH))
+    # IndexFlatIP: exact (brute-force) flat index using Inner Product similarity.
+    # Because embeddings are L2-normalised before insertion (see _normalize()),
+    # the inner product equals cosine similarity, so retrieval ranks chunks by
+    # semantic closeness to the query.  This index scans every stored vector
+    # exhaustively—trading speed for perfect recall—which is appropriate for
+    # small-to-medium document stores (up to ~100k vectors).
     return faiss.IndexFlatIP(dimension)
 
 
