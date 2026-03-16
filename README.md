@@ -16,7 +16,7 @@ This project provides a minimal RAG pipeline using FastAPI with a built-in web i
 ## Features
 - PDF + TXT ingestion (with OCR support for scanned PDFs)
 - Chunking + embeddings (SentenceTransformers)
-- FAISS vector store with HF Hub persistence
+- FAISS vector store (`IndexFlatIP` — exact cosine similarity via L2-normalised embeddings) with HF Hub persistence
 - Background ingestion job
 - FastAPI with web UI (HTML templates)
 - API endpoints with Pydantic validation
@@ -60,5 +60,5 @@ See [docs/EXPLANATIONS.md](docs/EXPLANATIONS.md).
 
 ## Notes
 - If `GOOGLE_API_KEY` is not set, the system returns retrieved chunks instead of an LLM answer.
-- This implementation avoids heavy frameworks and uses a lightweight local FAISS index.
+- This implementation avoids heavy frameworks and uses a lightweight local FAISS `IndexFlatIP` index (exact cosine similarity, brute-force).
 - For HF Spaces deployment, set `HF_REPO` and `HF_TOKEN` in secrets to persist data across sessions.
