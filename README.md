@@ -58,6 +58,9 @@ See [docs/architecture.drawio](docs/architecture.drawio).
 ## Mandatory Explanations
 See [docs/EXPLANATIONS.md](docs/EXPLANATIONS.md).
 
+## RAG Interview Q&A Reference
+A comprehensive set of answers covering RAG fundamentals, embeddings, document processing, retrieval optimisation, prompt engineering, system design, production troubleshooting, and advanced topics is available in [docs/RAG_QA.md](docs/RAG_QA.md).
+
 ## Notes
 - If `GOOGLE_API_KEY` is not set, the system returns retrieved chunks instead of an LLM answer.
 - This implementation avoids heavy frameworks and uses a lightweight local FAISS index.
